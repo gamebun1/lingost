@@ -5,7 +5,7 @@ from linux_keyring import KeyringManager, KEY_SPEC_PROCESS_KEYRING
 
 from gostcrypto import gostcipher, gosthmac, gostpbkdf, gosthash
 
-from utils import data_clean
+from utils import data_clean, deserialize_db, serialize_db, FIELD_SEP
 
 # backend logic
 class gost_vault:
@@ -17,7 +17,7 @@ class gost_vault:
 
         # PBKDF
         pbkdf_obj = gostpbkdf.new(password=paster_pwd, salt=self.salt, counter=10**3)
-        key_mats = bytearray(pbkdf_obj.derive(64))
+        key_mats = pbkdf_obj.derive(64)
 
         self.key_enc = key_mats[:32] #32 bytes
         self.key_mac = key_mats[32:]
@@ -49,8 +49,10 @@ class gost_vault:
         return data[:-pad_len]
 
     def encrypt_data(self, data):
-        json_bytes = json.dumps(data).encode('utf-8')
-        pad_data = self._pad(json_bytes)
+        plain_db = serialize_db(data)
+        pad_data = self._pad(plain_db)
+        data_clean(plain_db)
+
         iv = os.urandom(self.kuzn_size)
         
         self.key_enc = self._get_key_enc()
@@ -72,7 +74,15 @@ class gost_vault:
         finally:
             data_clean(self.key_mac)
 
-        return iv + mac + enc_data
+        payload = bytearray()
+        payload.extend(bytearray(iv))
+        payload.extend(mac)
+        payload(enc_data)
+        data_clean(iv)
+        data_clean(mac)
+        data_clean(enc_data)
+
+        return payload
     
     #генерация iv для шифрования паролей
     def _generate_iv_simple(self, init_data):
@@ -111,13 +121,20 @@ class gost_vault:
         data_clean(self.key_enc)
         data_clean(self.key_mac)
         try:
-            return json.loads(self._unpad(kuznechik.decrypt(enc_data)).decode('utf-8'))
+            decrypted_pad = bytearray(kuznechik.decrypt(enc_data))
+            decrypted = self._unpad(decrypted_pad)
+            data_clean(decrypted_pad)
+            
+            parsed_data = deserialize_db(decrypted)
+            data_clean(decrypted)
+            return parsed_data
         except:
             return None
     #шифрование отдельных данных
     def encrypt_bytes(self, data, init_data=None):
         self.key_enc = self._get_key_enc()
         try:
+            
             if init_data is None:
                 kuznechik = gostcipher.new('kuznechik', self.key_enc, gostcipher.MODE_ECB)
                 return kuznechik.encrypt(self._pad(data))
@@ -135,14 +152,41 @@ class gost_vault:
         try:
             if init_data is None:
                 kuznechik = gostcipher.new('kuznechik', self.key_enc, gostcipher.MODE_ECB)
-                return self._unpad(kuznechik.decrypt(enc_bytes)).decode("utf-8")
+                return self._unpad(kuznechik.decrypt(enc_bytes))
             else:
                 iv_d = self._generate_iv_simple(init_data=init_data)
 
                 kuznechik = gostcipher.new('kuznechik', self.key_enc, gostcipher.MODE_CBC, iv=iv_d)
-                return self._unpad(kuznechik.decrypt(enc_bytes)).decode("utf-8")
+                return self._unpad(kuznechik.decrypt(enc_bytes))
         finally:
             data_clean(self.key_enc)
+
+    #безопасное хранение в памяти
+    def encrypt_ram_pwd(self, site, pwd_ba):
+        site_ba = bytearray(site.encode('utf-8'))
+        payload = bytearray()
+        payload.extend(site_ba)
+        payload.extend(FIELD_SEP)
+        payload.extend(pwd_ba)
+        
+        enc_res = self.encrypt_bytes(payload, init_data=site)
+        
+        data_clean(site_ba)
+        data_clean(payload)
+        return enc_res
+
+    def decrypt_ram_pwd(self, enc_bytes, site):
+        decrypted_payload = self.decrypt_bytes(enc_bytes, init_data=site)
+        parts = decrypted_payload.split(FIELD_SEP)
+        
+        if len(parts) == 2:
+            pwd_ba = parts[1]
+            data_clean(parts[0])
+            data_clean(decrypted_payload)
+            return pwd_ba
+        else:
+            data_clean(decrypted_payload)
+            return bytearray()
         
     def cleanup(self):
         try:
@@ -151,3 +195,5 @@ class gost_vault:
         except Exception as e:
             print(f"error: {e}")
             pass
+
+    
