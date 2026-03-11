@@ -1,12 +1,10 @@
 import os
-import pwd
-import secrets
-import string
 import customtkinter as ctk
 import pyperclip
 from backend import gost_vault
-from utils import data_clean, get_master_password
+from utils import data_clean, get_secret, generate_pwd
 import gc
+from database import DatabaseManager
 
 DB_FILE = "passwords"
 GEN_FILE = "generator"
@@ -59,15 +57,42 @@ class ModernMessageBox:
 class passwword_manager_app:
     def __init__(self):
         self.root = ctk.CTk()
-        self.root.withdraw() 
+        self.root.title("Вход в хранилище (GOST Vault)")
+        self.root.geometry("450x280")
+        self.root.resizable(False, False)
+        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
         
-        # Заглушка для PinEntry
-        self.pwd_buffer = get_master_password()
+        self.db_manager = DatabaseManager(DB_FILE)
+        self.curr_data = {}
+        self.vault = None
         
-        if not self.pwd_buffer:
-            self.root.destroy()
-            return
+        # Показываем стартовое окно
+        self.show_startup_screen()
+        
+        self.root.mainloop()
 
+    def show_startup_screen(self):
+        self.startup_frame = ctk.CTkFrame(self.root, fg_color="transparent")
+        self.startup_frame.pack(expand=True, fill="both", padx=20, pady=20)
+        
+        ctk.CTkLabel(self.startup_frame, text="Защищенный менеджер паролей", font=("Arial", 18, "bold")).pack(pady=(10, 20))
+        ctk.CTkLabel(self.startup_frame, text="Выберите метод авторизации:", font=("Arial", 14)).pack(pady=(0, 20))
+        
+        # Кнопка ПАРОЛЯ
+        btn_pwd = ctk.CTkButton(self.startup_frame, text="Ввести Мастер-пароль", height=40, command=self.auth_via_password)
+        btn_pwd.pack(fill="x", padx=40, pady=10)
+
+    def auth_via_password(self):
+        self.root.withdraw() 
+        pwd_buffer = get_secret()
+        
+        if not pwd_buffer:
+            self.root.deiconify()
+            return
+            
+        self.initialize_vault(pwd_buffer)
+
+    def initialize_vault(self, secret_buffer):
         try:
             salt = None
             if os.path.exists(DB_FILE):
@@ -76,25 +101,26 @@ class passwword_manager_app:
                     if len(header) == 32:
                         salt = header
 
-            self.vault = gost_vault(self.pwd_buffer, salt=salt)
-            self.curr_data = self.load_db()
+            self.vault = gost_vault(secret_buffer, salt=salt)
+            loaded_data = self.db_manager.load_db(self.vault)
+            
+            if loaded_data is None:
+                raise ValueError("неверный пароль или ошибка расшифровки базы")
+                
+            self.curr_data = loaded_data
+            
         except Exception as e:
-            ModernMessageBox("Ошибка", str(e), "error")
-            self.curr_data = None
-        finally:
-            data_clean(self.pwd_buffer)
-
-        if self.curr_data is None:
-            print("Неверный пароль или ошибка расшифровки базы")
-            self.root.destroy()
+            ModernMessageBox("Ошибка авторизации", str(e), "error")
+            data_clean(secret_buffer)
+            self.root.deiconify()
             return
-        
-        self.load_config()
+        finally:
+            data_clean(secret_buffer)
 
+        self.startup_frame.destroy()
+        self.load_config()
         self.setup_ui()
         self.root.deiconify()
-        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
-        self.root.mainloop()
 
     def on_close(self):
         if hasattr(self, 'vault') and self.vault:
@@ -112,7 +138,7 @@ class passwword_manager_app:
                 self.generator_len = 17
                 self.generator_chars = "all"
         except Exception as e:
-            print(f"Файл настроек битый: {e}")
+            print(f"файл настроек битый: {e}")
             self.generator_len = 17
             self.generator_chars = "all"
 
@@ -181,18 +207,7 @@ class passwword_manager_app:
             return False
 
     def generator(self):
-        if self.generator_chars == "all":
-            alph = string.ascii_letters + string.digits + string.punctuation
-        elif self.generator_chars == "punc":
-            alph = string.ascii_letters + string.punctuation
-        elif self.generator_chars == "digs":
-            alph = string.ascii_letters + string.digits
-        elif self.generator_chars == "let":
-            alph = string.ascii_letters
-        else:
-            alph = string.ascii_letters + string.digits + string.punctuation
-    
-        pwd = ''.join(secrets.choice(alph) for _ in range(self.generator_len))
+        pwd = generate_pwd(self.generator_len, self.generator_chars)
         
         self.pwd_entry.delete(0, 'end')
         self.pwd_entry.insert(0, pwd)
@@ -221,7 +236,7 @@ class passwword_manager_app:
             "password": pwd_enc
         }
 
-        if self.save_db():
+        if self.db_manager.save_db(self.vault, self.curr_data):
             self.web_entry.delete(0, 'end')
             self.pwd_entry.delete(0, 'end')
             ModernMessageBox("Успех", f"Пароль для {web} успешно сохранен", "info")
@@ -305,11 +320,10 @@ class passwword_manager_app:
         ans = ModernMessageBox("Удаление базы", "Это действие необратимо! Вы уверены, что хотите удалить базу паролей?", "askyesno").result
         if not ans:
             return
-        if os.path.exists(DB_FILE):
-            os.remove(DB_FILE)
-        data_clean(self.curr_data)
-        self.curr_data = {}
-        ModernMessageBox("Удалено", "База паролей успешно удалена.", "info")
+        if self.db_manager.delete_db():
+            data_clean(self.curr_data)
+            self.curr_data = {}
+            ModernMessageBox("Удалено", "База паролей успешно удалена.", "info")
 
     def setup_ui(self):
         self.root.title("Менеджер пороли")

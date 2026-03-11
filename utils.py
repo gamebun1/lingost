@@ -2,6 +2,8 @@ import ctypes
 import gc
 import os
 import subprocess
+import string
+import secrets
 
 try:
     libc = ctypes.CDLL("libc.so.6")
@@ -45,7 +47,7 @@ def lock_memory():
         print(f"{e}")
 
 #защищенный ввод секрета с помощью PinEntry
-def get_master_password(
+def get_secret(
     title: str = "Безопасное хранилище паролей", 
     desc: str = "Введите мастер-пароль для доступа к хранилищу", 
     prompt: str = "Пороли:"):
@@ -197,3 +199,17 @@ def deserialize_db(buffer):
         data_clean(record)
         
     return result
+
+def generate_pwd(length: int, chars_mode: str) -> str:
+    if chars_mode == "all":
+        alph = string.ascii_letters + string.digits + string.punctuation
+    elif chars_mode == "punc":
+        alph = string.ascii_letters + string.punctuation
+    elif chars_mode == "digs":
+        alph = string.ascii_letters + string.digits
+    elif chars_mode == "let":
+        alph = string.ascii_letters
+    else:
+        alph = string.ascii_letters + string.digits + string.punctuation
+
+    return ''.join(secrets.choice(alph) for _ in range(length))

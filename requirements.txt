@@ -1,5 +1,4 @@
 gostcrypto
 pyperclip
-python-pkcs11
 cryptography
 customtkinter
