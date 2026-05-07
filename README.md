@@ -8,10 +8,14 @@
 * **Криптография РФ:** ГОСТ Р 34.12-2015 («Кузнечик») и ГОСТ Р 34.11-2012 («Стрибог») + контроль целостности HMAC.
 * **Защищенный ввод:** Прямой перехват мастер-пароля через системную утилиту `pinentry`.
 
+# Зависимости
+xclip - для x11
+wl-clipboard - для wayland
+
 # Установка(Linux)
 ```bash
-git clone https://github.com/gamebun1/gost_password_manager
-cd gost_password_manager
+git clone https://github.com/gamebun1/lingost
+cd lingost
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
@@ -26,3 +30,5 @@ sudo .venv/bin/python3 main.py
 ```bash
 python3 main.py
 ```
+
+

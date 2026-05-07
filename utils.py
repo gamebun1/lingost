@@ -41,8 +41,8 @@ def lock_memory():
         MCL_FUTURE = 2
         libc = ctypes.CDLL("libc.so.6")
         result = libc.mlockall(MCL_CURRENT | MCL_FUTURE)
-        if result != 0:
-            raise OSError("mlockall failed")
+#        if result != 0:
+#            raise OSError("mlockall failed")
     except Exception as e:
         print(f"{e}")
 
